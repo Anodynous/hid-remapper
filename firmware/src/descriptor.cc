@@ -24,6 +24,51 @@ axis_def_t axes[4];  // X, Y, V, H
 
 bool has_report_id;
 
+// Kensington Slimblade
+uint8_t report_descriptor[] = {
+ 0x05, 0x01,                    // Usage Page (Generic Desktop)        0
+ 0x09, 0x02,                    // Usage (Mouse)                       2
+ 0xa1, 0x01,                    // Collection (Application)            4
+ 0x09, 0x01,                    //  Usage (Pointer)                    6
+ 0xa1, 0x00,                    //  Collection (Physical)              8
+ 0x05, 0x09,                    //   Usage Page (Button)               10
+ 0x19, 0x01,                    //   Usage Minimum (1)                 12
+ 0x29, 0x02,                    //   Usage Maximum (2)                 14
+ 0x15, 0x00,                    //   Logical Minimum (0)               16
+ 0x25, 0x01,                    //   Logical Maximum (1)               18
+ 0x95, 0x02,                    //   Report Count (2)                  20
+ 0x75, 0x01,                    //   Report Size (1)                   22
+ 0x81, 0x02,                    //   Input (Data,Var,Abs)              24
+ 0x95, 0x01,                    //   Report Count (1)                  26
+ 0x75, 0x06,                    //   Report Size (6)                   28
+ 0x81, 0x03,                    //   Input (Cnst,Var,Abs)              30
+ 0x05, 0x01,                    //   Usage Page (Generic Desktop)      32
+ 0x09, 0x30,                    //   Usage (X)                         34
+ 0x09, 0x31,                    //   Usage (Y)                         36
+ 0x09, 0x38,                    //   Usage (Wheel)                     38
+ 0x15, 0x81,                    //   Logical Minimum (-127)            40
+ 0x25, 0x7f,                    //   Logical Maximum (127)             42
+ 0x75, 0x08,                    //   Report Size (8)                   44
+ 0x95, 0x03,                    //   Report Count (3)                  46
+ 0x81, 0x06,                    //   Input (Data,Var,Rel)              48
+// 0x06, 0x00, 0xff,              //   Usage Page (Vendor Defined Page 1) 50
+ 0x05, 0x09,                    //   Usage Page (Button)               10
+// 0x19, 0x01,                    //   Usage Minimum (1)                 53
+// 0x29, 0x02,                    //   Usage Maximum (2)                 55
+ 0x19, 0x03,                    //   Usage Minimum (3)                 53
+ 0x29, 0x04,                    //   Usage Maximum (4)                 55
+ 0x15, 0x00,                    //   Logical Minimum (0)               57
+ 0x25, 0x01,                    //   Logical Maximum (1)               59
+ 0x95, 0x02,                    //   Report Count (2)                  61
+ 0x75, 0x01,                    //   Report Size (1)                   63
+ 0x81, 0x02,                    //   Input (Data,Var,Abs)              65
+ 0x95, 0x01,                    //   Report Count (1)                  67
+ 0x75, 0x06,                    //   Report Size (6)                   69
+ 0x81, 0x03,                    //   Input (Cnst,Var,Abs)              71
+ 0xc0,                          //  End Collection                     73
+ 0xc0,                          // End Collection                      74
+};
+
 void mark_button(uint32_t usage, uint8_t report_id, uint16_t bitpos) {
     printf("mark_button(%0lx, %0hhx, %0hx)\n", usage, report_id, bitpos);
     if (usage >> 16 == 0x09) {
@@ -61,8 +106,9 @@ void mark_axis(uint32_t usage, uint8_t report_id, uint16_t bitpos, uint16_t size
     }
 }
 
-void parse_descriptor(volatile uint8_t* report_descriptor, int len) {
+void parse_descriptor() {
     int idx = 0;
+    int len = sizeof(report_descriptor);
 
     uint8_t report_id = 0;
     std::unordered_map<uint8_t, uint16_t> bitpos;  // report_id -> bitpos

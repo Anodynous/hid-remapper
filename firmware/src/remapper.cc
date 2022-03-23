@@ -199,8 +199,8 @@ uint8_t const desc_configuration[] = {
 
 char const* string_desc_arr[] = {
     (const char[]){ 0x09, 0x04 },  // 0: is supported language is English (0x0409)
-    "RP2040",                      // 1: Manufacturer
-    "HID Remapper",                // 2: Product
+    "Kensington",                      // 1: Manufacturer
+    "Slimblade",                // 2: Product
 };
 
 struct __attribute__((packed)) hid_report_t {

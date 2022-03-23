@@ -28,7 +28,7 @@ extern bool has_report_id;
 extern "C" {
 #endif
 
-void parse_descriptor(volatile uint8_t* report_descriptor, int len);
+void parse_descriptor();
 void clear_descriptor_data();
 
 #ifdef __cplusplus
