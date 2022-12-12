@@ -4,25 +4,27 @@ This is a configurable USB dongle that allows you to remap inputs from mice, key
 
 It can do things like reassign buttons, change keyboard layouts, map mouse buttons to keyboard inputs, map keystrokes to mouse inputs, change mouse sensitivity (permanently or when a button is held), rotate mouse axes by arbitrary (non-90 degree) angles, drag-lock for mouse buttons, scroll by moving the mouse, and much more.
 
-It is configurable [through a web browser](https://www.jfedor.org/hid-remapper-config/) using WebHID (Chrome or Chrome-based browser required). Currently it only supports a single input device, but that device can be a keyboard/mouse combo or a wireless receiver with a mouse and a keyboard connected.
+It is configurable [through a web browser](https://www.jfedor.org/hid-remapper-config/) using WebHID (Chrome or Chrome-based browser required).
+
+Wireless receivers are supported and multiple devices can be connected at the same time using a USB hub.
 
 In addition to the remapping functionality, it can do polling rate overclocking up to 1000 Hz.
+
+A separate [serial](SERIAL.md) version of the remapper takes inputs from a serial (RS-232) mouse and translates them to USB.
+
+There's also a [Bluetooth](BLUETOOTH.md) version that runs on nRF52840-based boards, which translates Bluetooth inputs to USB.
 
 ![HID Remapper](images/remapper1.jpg)
 
 ## How to make the device
 
-The remapper is made using a Raspberry Pi Pico and a USB extension cable cut in half. It is possible thanks to this awesome [Pico-PIO-USB](https://github.com/sekigon-gonnoc/Pico-PIO-USB) library by [sekigon-gonnoc](https://github.com/sekigon-gonnoc). The Pico's built-in USB interface is used to connect to the host computer and the library is used to handle inputs from a USB mouse.
+There are two main ways of making the HID Remapper. You can either make it yourself using a Raspberry Pi Pico (or two), or you can use the provided files to manufacture a custom board at JLCPCB or a similar service. Their functionality is the same.
 
-Making the device is really simple, you just need to cut a USB extension cable in half and solder four wires to the right pins on the Pico: D+ to GPIO0 (pin 1), D- to GPIO1 (pin 2), VBUS to VBUS (pin 40) and GND to GND (pin 38). The wires are usually color coded (green, white, red, black, respectively). See the pictures at the bottom.
-
-The [enclosure](enclosure) folder has 3D-printable files for an optional case, shown in the photo above. It uses four M2x8 flat head screws.
-
-The provided [UF2 file](firmware/remapper.uf2) can be used to flash the firmware onto the Pico the usual way (hold BOOT button while connecting to the computer, then copy the UF2 file to the USB drive that shows up).
+See [here](HARDWARE.md) for details on how to make the Pico variants of the device and [here](custom-boards/) for details on the custom board option.
 
 ## How to use the configuration tool
 
-A live version of the web configuration tool can be found [here](https://www.jfedor.org/hid-remapper-config/). It only works in Chrome and Chrome-based browsers. Unfortunately it doesn't seem to work on Chrome OS. On Linux you might need to give yourself permissions to the appropriate `/dev/hidraw*` device.
+A live version of the web configuration tool can be found [here](https://www.jfedor.org/hid-remapper-config/). It only works in Chrome and Chrome-based browsers (including ChromeOS). On Linux you might need to give yourself permissions to the appropriate `/dev/hidraw*` device.
 
 The input remapping mechanism is based on a list of _mappings_. Every mapping has an input and an output. Inputs and outputs are things like mouse buttons, mouse axes, keyboard keys etc. For example if you want the right mouse button to act as the left mouse button, add a mapping with input set to "Right button" and output set to "Left button".
 
@@ -56,9 +58,23 @@ If this description wasn't particularly clear for you, perhaps looking at some o
 
 If you can't use the browser-based configuration tool, there's also a [command-line tool](config-tool) that takes JSON in the same format as the web tool on standard input. I only tested it on Linux, but in theory it should also run on Windows and Mac.
 
+## How to compile the firmware
+
+```
+git clone https://github.com/jfedor2/hid-remapper.git
+cd hid-remapper
+git submodule update --init
+cd firmware
+mkdir build
+cd build
+cmake ..
+# or, to build for the custom boards:
+# PICO_BOARD=remapper cmake ..
+make
+```
+
 ## Future goals
 
-* Support multiple devices connected through a USB hub.
 * Upstream necessary modifications to the Pico-PIO-USB library.
 * Unmapped input passthrough on layers other than 0.
 * Runtime-configurable output report descriptor.
@@ -66,7 +82,3 @@ If you can't use the browser-based configuration tool, there's also a [command-l
 * Interactive remapping.
 * Explore alternative hardware platforms.
 * Test with more devices.
-* Bluetooth version.
-
-![HID Remapper inside](images/remapper2.jpg)
-![HID Remapper soldering close-up](images/remapper3.jpg)

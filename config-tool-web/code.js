@@ -12,6 +12,7 @@ const PRODUCT_ID = 0xBAF2;
 const DEFAULT_PARTIAL_SCROLL_TIMEOUT = 1000000;
 const DEFAULT_SCALING = 1000;
 
+const RESET_INTO_BOOTSEL = 1;
 const SET_CONFIG = 2;
 const GET_CONFIG = 3;
 const CLEAR_MAPPING = 4;
@@ -22,6 +23,8 @@ const GET_OUR_USAGES = 8
 const GET_THEIR_USAGES = 9
 const SUSPEND = 10;
 const RESUME = 11;
+const PAIR_NEW_DEVICE = 12;
+const CLEAR_BONDS = 13;
 
 const UINT8 = Symbol('uint8');
 const UINT32 = Symbol('uint32');
@@ -53,14 +56,22 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("add_mapping").addEventListener("click", add_mapping_onclick);
     document.getElementById("download_json").addEventListener("click", download_json);
     document.getElementById("upload_json").addEventListener("click", upload_json);
+    document.getElementById("flash_firmware").addEventListener("click", flash_firmware);
+    document.getElementById("pair_new_device").addEventListener("click", pair_new_device);
+    document.getElementById("clear_bonds").addEventListener("click", clear_bonds);
     document.getElementById("file_input").addEventListener("change", file_uploaded);
 
-    document.getElementById("load_from_device").disabled = true;
-    document.getElementById("save_to_device").disabled = true;
+    device_buttons_set_disabled_state(true);
 
     document.getElementById("partial_scroll_timeout_input").addEventListener("change", partial_scroll_timeout_onchange);
     document.getElementById("unmapped_passthrough_checkbox").addEventListener("change", unmapped_passthrough_onchange);
     document.getElementById("interval_override_dropdown").addEventListener("change", interval_override_onchange);
+
+    if ("hid" in navigator) {
+        navigator.hid.addEventListener('disconnect', hid_on_disconnect);
+    } else {
+        display_error("Your browser doesn't support WebHID. Try Chrome (desktop version) or a Chrome-based browser.");
+    }
 
     setup_examples();
     modal = new bootstrap.Modal(document.getElementById('usage_modal'), {});
@@ -74,8 +85,9 @@ async function open_device() {
     const devices = await navigator.hid.requestDevice({
         filters: [{ vendorId: VENDOR_ID, productId: PRODUCT_ID }]
     }).catch((err) => { display_error(err); });
-    if (devices !== undefined && devices.length > 0) {
-        device = devices[0];
+    const config_interface = devices?.find(d => d.collections.some(c => c.usagePage == 0xff00));
+    if (config_interface !== undefined) {
+        device = config_interface;
         if (!device.opened) {
             await device.open().catch((err) => { display_error(err + "\nIf you're on Linux, you might need to give yourself permissions to the appropriate /dev/hidraw* device."); });
         }
@@ -83,10 +95,12 @@ async function open_device() {
         if (success) {
             await get_usages_from_device();
             setup_usages_modal();
+            bluetooth_buttons_set_visibility(device.productName.includes("Bluetooth"));
         }
     }
-    document.getElementById("load_from_device").disabled = !success;
-    document.getElementById("save_to_device").disabled = !success;
+
+    device_buttons_set_disabled_state(!success);
+
     if (!success) {
         device = null;
     }
@@ -263,6 +277,19 @@ function download_json() {
 function upload_json() {
     clear_error();
     document.getElementById("file_input").click();
+}
+
+async function flash_firmware() {
+    display_error("HID Remapper should now be in firmware flashing mode. Copy UF2 file to the drive that appeared. If you don't want to flash new firmware at this time, just unplug and replug the device.");
+    await send_feature_command(RESET_INTO_BOOTSEL);
+}
+
+async function pair_new_device() {
+    await send_feature_command(PAIR_NEW_DEVICE);
+}
+
+async function clear_bonds() {
+    await send_feature_command(CLEAR_BONDS);
 }
 
 function file_uploaded() {
@@ -486,4 +513,24 @@ function setup_examples() {
         element.appendChild(clone);
     }
     element.appendChild(document.createTextNode('.'));
+}
+
+function hid_on_disconnect(event) {
+    if (event.device === device) {
+        device = null;
+        device_buttons_set_disabled_state(true);
+    }
+}
+
+function device_buttons_set_disabled_state(state) {
+    document.getElementById("load_from_device").disabled = state;
+    document.getElementById("save_to_device").disabled = state;
+    document.getElementById("flash_firmware").disabled = state;
+    document.getElementById("pair_new_device").disabled = state;
+    document.getElementById("clear_bonds").disabled = state;
+}
+
+function bluetooth_buttons_set_visibility(visible) {
+    document.getElementById("pair_new_device_container").classList.toggle("d-none", !visible);
+    document.getElementById("clear_bonds_container").classList.toggle("d-none", !visible);
 }

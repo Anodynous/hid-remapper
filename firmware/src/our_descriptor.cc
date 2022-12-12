@@ -89,6 +89,16 @@ const uint8_t our_report_descriptor[] = {
     0x29, 0x73,                //   Usage Maximum (0x73)
     0x95, 0x70,                //   Report Count (112)
     0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x19, 0x87,                //   Usage Minimum (0x87)
+    0x29, 0x8B,                //   Usage Maximum (0x8B)
+    0x95, 0x05,                //   Report Count (5)
+    0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x09, 0x90,                //   Usage (0x90)
+    0x09, 0x91,                //   Usage (0x91)
+    0x95, 0x02,                //   Report Count (2)
+    0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0x95, 0x01,                //   Report Count (1)
+    0x81, 0x03,                //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0xC0,                      // End Collection
 
     0x05, 0x0C,                // Usage Page (Consumer)
@@ -104,13 +114,19 @@ const uint8_t our_report_descriptor[] = {
     0x09, 0xE2,                //   Usage (Mute)
     0x09, 0xE9,                //   Usage (Volume Increment)
     0x09, 0xEA,                //   Usage (Volume Decrement)
+    0x75, 0x01,                //   Report Size (1)
+    0x95, 0x07,                //   Report Count (7)
+    0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0x05, 0x0B,                //   Usage Page (Telephony)
     0x09, 0x2F,                //   Usage (Phone Mute)
-    0x75, 0x01,                //   Report Size (1)
-    0x95, 0x08,                //   Report Count (8)
+    0x95, 0x01,                //   Report Count (1)
     0x81, 0x02,                //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     0xC0,                      // End Collection
+};
 
+const uint32_t our_report_descriptor_length = sizeof(our_report_descriptor);
+
+const uint8_t config_report_descriptor[] = {
     0x06, 0x00, 0xFF,        // Usage Page (Vendor Defined 0xFF00)
     0x09, 0x20,              // Usage (0x20)
     0xA1, 0x01,              // Collection (Application)
@@ -122,4 +138,4 @@ const uint8_t our_report_descriptor[] = {
     0xC0,                    // End Collection
 };
 
-const uint32_t our_report_descriptor_length = sizeof(our_report_descriptor);
+const uint32_t config_report_descriptor_length = sizeof(config_report_descriptor);

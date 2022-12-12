@@ -1,8 +1,8 @@
-#include <stdio.h>
 #include <deque>
 
 #include "descriptor_parser.h"
 #include "globals.h"
+#include "platform.h"
 #include "quirks.h"
 
 const uint8_t HID_INPUT = 0x80;
@@ -33,9 +33,28 @@ void mark_usage(std::unordered_map<uint8_t, std::unordered_map<uint32_t, usage_d
         });
 }
 
-void parse_descriptor(uint16_t vendor_id, uint16_t product_id, const uint8_t* report_descriptor, int len, uint8_t interface) {
+void assign_interface_index(uint16_t interface) {
+    if (interface_index.count(interface)) {
+        return;
+    }
+
+    uint8_t i = 0;
+    while (i < 31 && ((1 << i) & interface_index_in_use)) {
+        i++;
+    }
+
+    // if we have more than 32 interfaces, they end up sharing bit 31
+
+    interface_index[interface] = i;
+    interface_index_in_use |= 1 << i;
+}
+
+void parse_descriptor(uint16_t vendor_id, uint16_t product_id, const uint8_t* report_descriptor, int len, uint16_t interface) {
+    usages_mutex_enter();
     parse_descriptor(their_usages[interface], has_report_id_theirs[interface], report_descriptor, len);
     apply_quirks(vendor_id, product_id, their_usages[interface], report_descriptor, len);
+    assign_interface_index(interface);
+    usages_mutex_exit();
     their_descriptor_updated = true;
 }
 
@@ -71,8 +90,6 @@ std::unordered_map<uint8_t, uint16_t> parse_descriptor(std::unordered_map<uint8_
 
         switch (item) {
             case HID_INPUT: {
-                printf("Input %0lx\n", value);
-
                 bool relative = value & (1 << 2);
                 if ((value & 0x03) == 0x02) {  // scalar
                     if (usage_minimum && usage_maximum) {
@@ -134,49 +151,40 @@ std::unordered_map<uint8_t, uint16_t> parse_descriptor(std::unordered_map<uint8_
                 usage_maximum = 0;
                 break;
             case HID_USAGE_PAGE:
-                printf("Usage page %0lx\n", value);
                 usage_page = value;
                 break;
             case HID_REPORT_SIZE:
-                printf("Report size %0lx\n", value);
                 report_size = value;
                 break;
             case HID_REPORT_ID:
-                printf("Report ID %0lx\n", value);
                 report_id = value;
                 has_report_id = true;
                 break;
             case HID_REPORT_COUNT:
-                printf("Report count %0lx\n", value);
                 report_count = value;
                 break;
             case HID_USAGE: {
-                printf("Usage %0lx\n", value);
                 uint32_t full_usage = item_size <= 2 ? usage_page << 16 | value : value;
                 usages.push_back(full_usage);
                 break;
             }
             case HID_USAGE_MINIMUM: {
-                printf("Usage minimum %0lx\n", value);
                 uint32_t full_usage = item_size <= 2 ? usage_page << 16 | value : value;
                 usage_minimum = full_usage;
                 break;
             }
             case HID_USAGE_MAXIMUM: {
-                printf("Usage maximum %0lx\n", value);
                 uint32_t full_usage = item_size <= 2 ? usage_page << 16 | value : value;
                 usage_maximum = full_usage;
                 break;
             }
             case HID_LOGICAL_MINIMUM:
-                printf("Logical minimum %0lx\n", value);
                 logical_minimum = value;
                 if (logical_minimum & (1 << (item_size * 8 - 1))) {
                     logical_minimum |= 0xFFFFFFFF << item_size * 8;
                 }
                 break;
             case HID_LOGICAL_MAXIMUM:
-                printf("Logical maximum %0lx\n", value);
                 logical_maximum = value;
                 break;
         }
@@ -189,6 +197,22 @@ std::unordered_map<uint8_t, uint16_t> parse_descriptor(std::unordered_map<uint8_
     return bitpos;
 }
 
-void clear_descriptor_data() {
-    need_to_clear_descriptor_data = true;
+void clear_descriptor_data(uint8_t dev_addr) {
+    usages_mutex_enter();
+    for (auto it = their_usages.cbegin(); it != their_usages.cend();) {
+        uint16_t dev_addr_interface = it->first;
+        if (dev_addr_interface >> 8 == dev_addr) {
+            has_report_id_theirs.erase(dev_addr_interface);
+
+            uint8_t index = interface_index[dev_addr_interface];
+            interface_index.erase(dev_addr_interface);
+            interface_index_in_use &= ~(1 << index);
+
+            it = their_usages.erase(it);
+        } else {
+            it++;
+        }
+    }
+    usages_mutex_exit();
+    their_descriptor_updated = true;
 }

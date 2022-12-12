@@ -16,6 +16,8 @@ enum class ConfigCommand : int8_t {
     GET_THEIR_USAGES = 9,
     SUSPEND = 10,
     RESUME = 11,
+    PAIR_NEW_DEVICE = 12,
+    CLEAR_BONDS = 13,
 };
 
 struct usage_def_t {
@@ -33,7 +35,7 @@ struct map_source_t {
     uint32_t usage;
     int32_t scaling = 1000;  // * 1000
     bool sticky = false;
-    int8_t layer = 0;
+    uint8_t layer = 0;
 };
 
 struct usage_rle_t {
@@ -57,7 +59,7 @@ struct __attribute__((packed)) mapping_config_t {
     uint32_t target_usage;
     uint32_t source_usage;
     int32_t scaling;  // * 1000
-    int8_t layer;
+    uint8_t layer;
     uint8_t flags;
 };
 
